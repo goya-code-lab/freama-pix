@@ -41,27 +41,34 @@ function ImageEditorCanvas({ image, settings, onChange }) {
 
     const imgRef = useRef(null);
 
+    // useRef で paths の最新値を常に参照できるようにする（stale closure 対策）
+    const pathsRef = useRef(paths);
+    useEffect(() => { pathsRef.current = paths; }, [paths]);
+
     // Reset crop and paths when image changes or aspect ratio changes (preset change)
     useEffect(() => {
-        if (imgRef.current) {
+        if (imgRef.current && imgRef.current.width > 0 && imgRef.current.height > 0) {
             const { width, height } = imgRef.current;
             const newCrop = centerAspectCrop(width, height, aspect);
+            const newPaths = image.mosaicPaths || [];
             setLocalCrop(newCrop);
-            setPaths(image.mosaicPaths || []); // Reset paths state for the new image view
-            setMaskDataUrl(''); // Clear previous mask frame instantly visually
-            onChange({ ...image, crop: newCrop, imgRef: imgRef.current });
+            setPaths(newPaths);
+            setMaskDataUrl('');
+            // mosaicPaths を明示的に渡して消去されないようにする
+            onChange({ ...image, crop: newCrop, mosaicPaths: newPaths, imgRef: imgRef.current });
         }
     }, [image.id, aspect]);
 
-
     function onImageLoad(e) {
+        // 画像ロード時は pathsRef.current（最新の paths）を使って mosaicPaths を保持する
+        const currentPaths = pathsRef.current;
         if (!image.crop) {
             const { width, height } = e.currentTarget;
             const newCrop = centerAspectCrop(width, height, aspect);
             setLocalCrop(newCrop);
-            onChange({ ...image, crop: newCrop, imgRef: imgRef.current });
+            onChange({ ...image, crop: newCrop, mosaicPaths: currentPaths, imgRef: imgRef.current });
         } else {
-            onChange({ ...image, imgRef: imgRef.current });
+            onChange({ ...image, mosaicPaths: currentPaths, imgRef: imgRef.current });
         }
     }
 
