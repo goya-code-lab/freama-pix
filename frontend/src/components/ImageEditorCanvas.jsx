@@ -29,29 +29,9 @@ function ImageEditorCanvas({ image, settings, onChange }) {
     const selectedPreset = PLATFORM_PRESETS.find(p => p.id === settings.platform);
     const aspect = selectedPreset ? selectedPreset.ratio : 1;
 
-    // If the image doesn't have a crop initialized, we set it internally first, then update parent
-    const [localCrop, setLocalCrop] = useState(() => {
-        if (image.crop) return image.crop;
-        
-        // Initial placeholder using aspect ratio before image loads
-        const minPercent = 90;
-        let cropWidth = minPercent;
-        let cropHeight = minPercent;
-        
-        if (aspect > 1) {
-            cropHeight = minPercent / aspect;
-        } else if (aspect < 1) {
-            cropWidth = minPercent * aspect;
-        }
-        
-        return {
-            unit: '%',
-            width: Math.max(0.1, cropWidth),
-            height: Math.max(0.1, cropHeight),
-            x: Math.max(0, (100 - cropWidth) / 2),
-            y: Math.max(0, (100 - cropHeight) / 2)
-        };
-    });
+    // If the image doesn't have a crop initialized, start with null.
+    // onImageLoad will calculate the correct crop once the natural dimensions are known.
+    const [localCrop, setLocalCrop] = useState(image.crop ?? null);
 
     // Mosaic Brush States
     const [paths, setPaths] = useState(image.mosaicPaths || []);
