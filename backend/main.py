@@ -19,6 +19,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://localhost",
+        "https://freama-pix.onrender.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -30,3 +31,7 @@ app.include_router(api_router, prefix="/api")
 @app.get("/")
 def read_root():
     return {"message": "Flea Market API is running!"}
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
