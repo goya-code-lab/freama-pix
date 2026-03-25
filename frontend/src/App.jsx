@@ -500,96 +500,118 @@ function App() {
           </div>
         </header>
 
-        {/* Main Content Area */}
+        {/* Main Content Area - 3パネルを1セットだけ定義し CSS で切り替え */}
         <main className="flex-1 flex overflow-hidden">
 
-          {/* === PC: 3カラムレイアウト (md以上) === */}
-          {/* 左カラム */}
-          <div className="hidden md:flex w-80 border-r border-[var(--border)] bg-[var(--card)] flex-col h-full z-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+          {/* 左パネル: 画像リスト
+              PC → 常に表示 (flex)
+              スマホ → mobileTab === 'upload' の時だけ表示 */}
+          <div className={`
+            border-r border-[var(--border)] bg-[var(--card)] flex-col h-full z-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)]
+            w-full md:w-80
+            ${mobileTab === 'upload' ? 'flex' : 'hidden'} md:flex
+          `}>
             {uploadPanel}
           </div>
 
-          {/* 中央カラム */}
-          <div className="hidden md:flex flex-1 bg-[var(--background)] items-center justify-center overflow-hidden relative">
-            {editorPanel}
-          </div>
-
-          {/* 右カラム */}
-          <div className="hidden md:flex w-80 border-l border-[var(--border)] flex-col h-full shadow-[-4px_0_24px_rgba(0,0,0,0.02)] z-0">
-            {settingsPanel}
-          </div>
-
-          {/* === スマホ: タブ切り替えレイアウト (md未満) === */}
-          <div className="flex md:hidden flex-1 flex-col overflow-hidden">
-            {/* タブコンテンツ */}
-            <div className="flex-1 overflow-hidden">
-              {mobileTab === 'upload' && (
-                <div className="h-full overflow-y-auto bg-[var(--card)]">
-                  {uploadPanel}
+          {/* 中央パネル: エディタ（ImageEditorCanvas は常にマウント）
+              PC → 常に表示
+              スマホ → mobileTab === 'editor' の時だけ表示 */}
+          <div className={`
+            flex-1 bg-[var(--background)] items-center justify-center overflow-hidden relative
+            ${mobileTab === 'editor' ? 'flex' : 'hidden'} md:flex
+          `}>
+            <div className="w-full h-full flex items-center justify-center p-4 md:p-6">
+              {selectedImageIndex !== null && images[selectedImageIndex] ? (
+                <div key={selectedImageIndex} className="animate-in fade-in duration-300 w-full h-full flex items-center justify-center">
+                  <ImageEditorCanvas
+                    image={images[selectedImageIndex]}
+                    settings={settings}
+                    onChange={(updatedImage) => {
+                      const newImages = [...images];
+                      newImages[selectedImageIndex] = updatedImage;
+                      setImages(newImages);
+                    }}
+                  />
                 </div>
-              )}
-              {mobileTab === 'editor' && (
-                <div className="h-full overflow-hidden bg-[var(--background)]">
-                  {editorPanel}
-                </div>
-              )}
-              {mobileTab === 'settings' && (
-                <div className="h-full overflow-y-auto">
-                  {settingsPanel}
+              ) : (
+                <div className="text-center flex flex-col items-center w-full h-full justify-center">
+                  <div className="w-full max-w-sm mb-8 hidden md:block">
+                    <AdPlaceholder format="メインキャンバス中央広告" height="250px" />
+                  </div>
+                  <div className="text-[var(--muted-foreground)] flex flex-col items-center">
+                    <div className="mx-auto w-12 h-12 bg-[var(--muted)] rounded-full flex items-center justify-center mb-3">
+                      <Upload size={20} opacity={0.5} />
+                    </div>
+                    <h3 className="text-base font-medium text-[var(--foreground)] mb-1">画像が選択されていません</h3>
+                    <p className="text-xs max-w-[250px] mx-auto opacity-70 mb-4">「画像」タブから画像をアップロードしてください。</p>
+                    <button
+                      onClick={() => setMobileTab('upload')}
+                      className="md:hidden inline-flex items-center gap-1.5 px-5 py-2.5 bg-blue-600 text-white rounded-full text-sm font-bold shadow-md"
+                    >
+                      <Images size={16} />
+                      画像をアップロード
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
-
-            {/* ボトムタブナビゲーション */}
-            <nav className="flex-shrink-0 border-t border-[var(--border)] bg-[var(--card)] flex items-stretch h-14 shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
-              {/* 画像タブ */}
-              <button
-                onClick={() => setMobileTab('upload')}
-                className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors text-[11px] font-bold relative
-                  ${mobileTab === 'upload' ? 'text-blue-600' : 'text-gray-400'}`}
-              >
-                {mobileTab === 'upload' && (
-                  <span className="absolute top-0 inset-x-4 h-0.5 bg-blue-600 rounded-b-full" />
-                )}
-                <Images size={20} />
-                <span>画像</span>
-                {images.length > 0 && (
-                  <span className="absolute top-1.5 right-[calc(50%-18px)] bg-blue-600 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">
-                    {images.length}
-                  </span>
-                )}
-              </button>
-
-              {/* 編集タブ */}
-              <button
-                onClick={() => setMobileTab('editor')}
-                className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors text-[11px] font-bold relative
-                  ${mobileTab === 'editor' ? 'text-blue-600' : 'text-gray-400'}`}
-              >
-                {mobileTab === 'editor' && (
-                  <span className="absolute top-0 inset-x-4 h-0.5 bg-blue-600 rounded-b-full" />
-                )}
-                <Crop size={20} />
-                <span>編集</span>
-              </button>
-
-              {/* 設定タブ */}
-              <button
-                onClick={() => setMobileTab('settings')}
-                className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors text-[11px] font-bold relative
-                  ${mobileTab === 'settings' ? 'text-blue-600' : 'text-gray-400'}`}
-              >
-                {mobileTab === 'settings' && (
-                  <span className="absolute top-0 inset-x-4 h-0.5 bg-blue-600 rounded-b-full" />
-                )}
-                <Settings size={20} />
-                <span>設定</span>
-              </button>
-            </nav>
           </div>
 
+          {/* 右パネル: 設定
+              PC → 常に表示
+              スマホ → mobileTab === 'settings' の時だけ表示 */}
+          <div className={`
+            border-l border-[var(--border)] flex-col h-full shadow-[-4px_0_24px_rgba(0,0,0,0.02)] z-0
+            w-full md:w-80
+            ${mobileTab === 'settings' ? 'flex' : 'hidden'} md:flex
+          `}>
+            {settingsPanel}
+          </div>
+
+          {/* スマホ用ボトムタブナビ（常に表示、PCでは hidden） */}
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-[var(--border)] bg-[var(--card)] flex items-stretch h-14 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] z-50">
+            <button
+              onClick={() => setMobileTab('upload')}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors text-[11px] font-bold relative
+                ${mobileTab === 'upload' ? 'text-blue-600' : 'text-gray-400'}`}
+            >
+              {mobileTab === 'upload' && <span className="absolute top-0 inset-x-4 h-0.5 bg-blue-600 rounded-b-full" />}
+              <Images size={20} />
+              <span>画像</span>
+              {images.length > 0 && (
+                <span className="absolute top-1.5 right-[calc(50%-18px)] bg-blue-600 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                  {images.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setMobileTab('editor')}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors text-[11px] font-bold relative
+                ${mobileTab === 'editor' ? 'text-blue-600' : 'text-gray-400'}`}
+            >
+              {mobileTab === 'editor' && <span className="absolute top-0 inset-x-4 h-0.5 bg-blue-600 rounded-b-full" />}
+              <Crop size={20} />
+              <span>編集</span>
+            </button>
+            <button
+              onClick={() => setMobileTab('settings')}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors text-[11px] font-bold relative
+                ${mobileTab === 'settings' ? 'text-blue-600' : 'text-gray-400'}`}
+            >
+              {mobileTab === 'settings' && <span className="absolute top-0 inset-x-4 h-0.5 bg-blue-600 rounded-b-full" />}
+              <Settings size={20} />
+              <span>設定</span>
+            </button>
+          </nav>
+
         </main>
+
+        {/* スマホ用ボトムナビの高さ分のスペーサー */}
+        <div className="md:hidden h-14 flex-shrink-0" />
+
       </div>
+
 
       {/* SEO & Landing Page Content */}
       <div className="relative z-10 w-full bg-white">
