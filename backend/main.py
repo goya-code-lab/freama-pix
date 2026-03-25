@@ -20,6 +20,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://localhost",
         "https://freama-pix.onrender.com",
+        "https://freama-pix.goya-code-lab.jp",
     ],
     allow_credentials=True,
     allow_methods=["*"],
