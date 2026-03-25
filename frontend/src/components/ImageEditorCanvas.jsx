@@ -32,14 +32,24 @@ function ImageEditorCanvas({ image, settings, onChange }) {
     // If the image doesn't have a crop initialized, we set it internally first, then update parent
     const [localCrop, setLocalCrop] = useState(() => {
         if (image.crop) return image.crop;
-        // Default crop to minPercent 90% square to ensure it shows up immediately 
-        // Image dimensions aren't known yet, so we use percentage based defaults
+        
+        // Initial placeholder using aspect ratio before image loads
+        const minPercent = 90;
+        let cropWidth = minPercent;
+        let cropHeight = minPercent;
+        
+        if (aspect > 1) {
+            cropHeight = minPercent / aspect;
+        } else if (aspect < 1) {
+            cropWidth = minPercent * aspect;
+        }
+        
         return {
             unit: '%',
-            width: 90,
-            height: 90,
-            x: 5,
-            y: 5
+            width: Math.max(0.1, cropWidth),
+            height: Math.max(0.1, cropHeight),
+            x: Math.max(0, (100 - cropWidth) / 2),
+            y: Math.max(0, (100 - cropHeight) / 2)
         };
     });
 
