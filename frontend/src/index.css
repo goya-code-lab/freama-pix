@@ -1,0 +1,324 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f8fafc;
+  /* Tailwind slate-50 */
+  --foreground: #0f172a;
+  /* Tailwind slate-900 */
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --border: #e2e8f0;
+  /* Tailwind slate-200 */
+  --primary: #2563eb;
+  /* Tailwind blue-600 */
+  --primary-foreground: #ffffff;
+  --muted: #f1f5f9;
+  /* Tailwind slate-100 */
+  --muted-foreground: #64748b;
+  /* Tailwind slate-500 */
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: var(--foreground);
+  background-color: var(--background);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a;
+    /* Tailwind slate-900 */
+    --foreground: #f8fafc;
+    /* Tailwind slate-50 */
+    --card: #1e293b;
+    /* Tailwind slate-800 */
+    --card-foreground: #f8fafc;
+    --border: #334155;
+    /* Tailwind slate-700 */
+    --primary: #3b82f6;
+    /* Tailwind blue-500 */
+    --primary-foreground: #ffffff;
+    --muted: #1e293b;
+    /* Tailwind slate-800 */
+    --muted-foreground: #94a3b8;
+    /* Tailwind slate-400 */
+  }
+}
+
+body {
+  margin: 0;
+  color: var(--foreground);
+}
+
+html,
+body {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Hide ReactCrop overlays when in mosaic brush mode or no-crop mode */
+.mosaic-active-container .ReactCrop__crop-selection,
+.mosaic-active-container .ReactCrop__drag-elements,
+.mosaic-active-container .ReactCrop__rule-of-thirds-vt,
+.mosaic-active-container .ReactCrop__rule-of-thirds-hz,
+.no-crop-active-container .ReactCrop__crop-selection,
+.no-crop-active-container .ReactCrop__drag-elements,
+.no-crop-active-container .ReactCrop__rule-of-thirds-vt,
+.no-crop-active-container .ReactCrop__rule-of-thirds-hz {
+  display: none !important;
+}
+
+.mosaic-active-container .react-crop-custom::before,
+.no-crop-active-container .react-crop-custom::before {
+  display: none !important;
+}
+
+/* Custom Scrollbar for a modern look */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* UI Effects / Animations */
+
+/* 1. Staggered fade in and slide up for image list */
+@keyframes slideUpFade {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up-fade {
+  animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+/* 2. Drag & drop "marching ants" pulsing border */
+@keyframes marchants {
+  0% {
+    background-position: 0 0;
+  }
+
+  100% {
+    background-position: 20px 0;
+  }
+}
+
+.drag-active-glow {
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1), 0 0 20px rgba(37, 99, 235, 0.2);
+  /* Use an SVG background for marching ants if needed, or stick to solid glow depending on design. We'll use a soft glow and border pulse here */
+  animation: pulseGlow 2s infinite;
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.2);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(37, 99, 235, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+  }
+}
+
+/* 3. Crossfade & Zoom in for canvas preview */
+@keyframes fadeInZoom {
+  0% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in-zoom {
+  animation: fadeInZoom 0.3s ease-out forwards;
+}
+
+/* 4. Magic Indicator active tab glow */
+.magic-tab-active {
+  position: relative;
+}
+
+.magic-tab-active::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: inherit;
+  filter: blur(8px);
+  opacity: 0.5;
+  border-radius: inherit;
+  z-index: -1;
+}
+
+/* 5. Tooltip animation for sliders */
+@keyframes tooltipBounceIn {
+  0% {
+    opacity: 0;
+    transform: translateY(5px) translateX(-50%) scale(0.9);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-2px) translateX(-50%) scale(1.05);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) translateX(-50%) scale(1);
+  }
+}
+
+.animate-tooltip-bounce {
+  animation: tooltipBounceIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.custom-focus-ring:focus-within {
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+.custom-focus-ring {
+  transition: all 0.2s ease-out;
+}
+
+/* Site Selection Animations (Option 3 Trial) */
+@keyframes siteSelectPulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+  50% { transform: scale(1.02); box-shadow: 0 0px 20px rgba(59, 130, 246, 0.15); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+}
+
+.animate-site-select-pulse {
+  animation: siteSelectPulse 3s infinite ease-in-out;
+}
+
+@keyframes siteSelectRipple {
+  0% { transform: scale(0.95); opacity: 0.5; filter: brightness(1.2); }
+  50% { transform: scale(1.05); opacity: 1; filter: brightness(1.1); }
+  100% { transform: scale(1); opacity: 1; filter: brightness(1); }
+}
+
+.animate-site-select-ripple {
+  animation: siteSelectRipple 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Autumn Leaves Animations */
+@keyframes leafFall {
+  0% { transform: translateY(-20px) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(150px) rotate(180deg); opacity: 0; }
+}
+
+.animate-leaf-fall {
+  animation-name: leafFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes leafSway {
+  0% { transform: translateX(-15px) rotate(-15deg); }
+  100% { transform: translateX(15px) rotate(15deg); }
+}
+
+.animate-leaf-sway {
+  animation-name: leafSway;
+}
+
+/* Snow Fall Animations */
+@keyframes snowFall {
+  0% { transform: translateY(-20px); opacity: 0; }
+  10% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(150px); opacity: 0; }
+}
+
+.animate-snow-fall {
+  animation-name: snowFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.animate-rain-fall {
+  animation-name: snowFall; /* Reuse the straight downward fall */
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes snowSway {
+  0% { transform: translateX(-8px); }
+  100% { transform: translateX(8px); }
+}
+
+.animate-snow-sway {
+  animation-name: snowSway;
+}
+
+/* Background Scroll Animations (for Sunflower field etc) */
+@keyframes bgScrollLeft {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-bg-scroll {
+  /* 60秒かけて非常にゆっくり横スクロール */
+  animation: bgScrollLeft 60s linear infinite;
+  will-change: transform;
+}
+
+/* Sakura Fall Animations */
+@keyframes sakuraFall {
+  0% { transform: translateY(-20px) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(150px) rotate(360deg); opacity: 0; }
+}
+
+.animate-sakura-fall {
+  animation-name: sakuraFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes sakuraSway {
+  0% { transform: translateX(-20px) rotate(-30deg); }
+  100% { transform: translateX(20px) rotate(30deg); }
+}
+
+.animate-sakura-sway {
+  animation-name: sakuraSway;
+}
