@@ -53,6 +53,17 @@ function ImageEditorCanvas({ image, settings, onChange }) {
         }
     }, [image.id, aspect]);
 
+    // paths が変わるたびに親(App)の images state に保存する
+    // これによりスマホでタブ切り替え(アンマウント)しても mosaicPaths が消えない
+    const isFirstMount = useRef(true);
+    useEffect(() => {
+        if (isFirstMount.current) {
+            isFirstMount.current = false;
+            return;
+        }
+        onChange({ ...image, mosaicPaths: paths, imgRef: imgRef.current });
+    }, [paths]);
+
     function onImageLoad(e) {
         if (!image.crop) {
             const { width, height } = e.currentTarget;

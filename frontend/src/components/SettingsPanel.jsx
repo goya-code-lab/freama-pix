@@ -264,7 +264,7 @@ function SettingsPanel({ settings, onChange, onProcess, isReady, isProcessing })
                                     <select
                                         value={settings.watermarkPosition}
                                         onChange={(e) => onChange({ watermarkPosition: e.target.value })}
-                                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md bg-white"
+                                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md bg-white text-gray-800"
                                     >
                                         <option value="top-left">左上</option>
                                         <option value="top-right">右上</option>
@@ -278,7 +278,7 @@ function SettingsPanel({ settings, onChange, onProcess, isReady, isProcessing })
                                     <select
                                         value={settings.watermarkSize}
                                         onChange={(e) => onChange({ watermarkSize: e.target.value })}
-                                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md bg-white"
+                                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md bg-white text-gray-800"
                                     >
                                         <option value="S">小さめ</option>
                                         <option value="M">標準</option>
