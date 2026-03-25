@@ -146,7 +146,7 @@ function App() {
         formData.append('files', pImg.file);
       });
 
-      const response = await fetch('/api/convert', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/convert`, {
         method: 'POST',
         body: formData,
       });

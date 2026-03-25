@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import traceback
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -16,7 +16,10 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
