@@ -136,10 +136,22 @@ function ImageEditorCanvas({ image, settings, onChange }) {
 
     const handlePointerUp = (e) => {
         if (!currentPath || settings.mosaicMode === 'none') return;
-        const newPaths = [...paths, currentPath];
-        console.log('[Mosaic] pointerUp - saving paths count=', newPaths.length, 'points in last path=', currentPath.points.length);
-        setPaths(newPaths);
-        onChange({ ...image, mosaicPaths: newPaths, imgRef: imgRef.current });
+        const finishedPath = currentPath;
+        // 先に currentPath をクリアして重複実行を防ぐ（pointerleave との競合対策）
+        setCurrentPath(null);
+        setPaths(prev => {
+            const newPaths = [...prev, finishedPath];
+            console.log('[Mosaic] pointerUp - saving paths count=', newPaths.length, 'points in last path=', finishedPath.points.length);
+            // functional updater 内で onChange を呼ぶと image が常に最新になる
+            onChange({ ...image, mosaicPaths: newPaths, imgRef: imgRef.current });
+            return newPaths;
+        });
+    };
+
+    // pointerLeave: スマホで指が領域外に出た場合は描画を中断（パスは破棄）
+    // ※ pointerUp と同時発火して race condition を起こすため、ここでは保存しない
+    const handlePointerLeave = (e) => {
+        if (!currentPath) return;
         setCurrentPath(null);
     };
 
@@ -234,8 +246,8 @@ function ImageEditorCanvas({ image, settings, onChange }) {
                             onPointerDown={isMosaicMode ? handlePointerDown : undefined}
                             onPointerMove={isMosaicMode ? handlePointerMove : undefined}
                             onPointerUp={isMosaicMode ? handlePointerUp : undefined}
-                            onPointerLeave={isMosaicMode ? handlePointerUp : undefined}
-                            onPointerCancel={isMosaicMode ? handlePointerUp : undefined}
+                            onPointerLeave={isMosaicMode ? handlePointerLeave : undefined}
+                            onPointerCancel={isMosaicMode ? handlePointerLeave : undefined}
                             style={{
                                 cursor: getCursorStyle(),
                                 backdropFilter: maskDataUrl ? `blur(${settings.mosaicStrength}px)` : 'none',
