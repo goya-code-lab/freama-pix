@@ -53,8 +53,8 @@ function ImageEditorCanvas({ image, settings, onChange }) {
             const newPaths = image.mosaicPaths || [];
             setLocalCrop(newCrop);
             setPaths(newPaths);
-            setMaskDataUrl('');
             // mosaicPaths を明示的に渡して消去されないようにする
+            // ※ setMaskDataUrl('') は不要: pathsの変化でmaskDataUrlを再構築するuseEffectが自動実行される
             onChange({ ...image, crop: newCrop, mosaicPaths: newPaths, imgRef: imgRef.current });
         }
     }, [image.id, aspect]);
@@ -117,7 +117,7 @@ function ImageEditorCanvas({ image, settings, onChange }) {
         const rect = imgRef.current.getBoundingClientRect();
         const x = ((e.clientX - rect.left) / rect.width) * 100;
         const y = ((e.clientY - rect.top) / rect.height) * 100;
-
+        console.log('[Mosaic] pointerDown x=', x.toFixed(1), 'y=', y.toFixed(1), 'mode=', settings.mosaicMode);
         setCurrentPath({
             mode: settings.mosaicMode,
             size: settings.mosaicBrushSize,
@@ -137,6 +137,7 @@ function ImageEditorCanvas({ image, settings, onChange }) {
     const handlePointerUp = (e) => {
         if (!currentPath || settings.mosaicMode === 'none') return;
         const newPaths = [...paths, currentPath];
+        console.log('[Mosaic] pointerUp - saving paths count=', newPaths.length, 'points in last path=', currentPath.points.length);
         setPaths(newPaths);
         onChange({ ...image, mosaicPaths: newPaths, imgRef: imgRef.current });
         setCurrentPath(null);

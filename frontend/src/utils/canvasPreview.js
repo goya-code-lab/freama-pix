@@ -121,6 +121,7 @@ export async function canvasPreview(
     ctx.restore();
 
     // Overlay Mosaic if paths exist
+    console.log('[canvasPreview] mosaicPaths:', mosaicPaths ? mosaicPaths.length + ' paths' : 'none/empty');
     if (mosaicPaths && mosaicPaths.length > 0) {
         const maskCanvas = document.createElement('canvas');
         maskCanvas.width = canvas.width;
