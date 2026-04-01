@@ -3,7 +3,7 @@ import zipfile
 from typing import List
 from PIL import Image
 
-import time
+from datetime import datetime, timezone, timedelta
 
 
 def process_and_zip_images(
@@ -18,6 +18,9 @@ def process_and_zip_images(
     リサイズ、JPEG圧縮で容量制限を満たすまで画質を下げ、ZIPにまとめる処理
     """
     
+    # ZIPエントリのタイムスタンプをJST（UTC+9）で固定
+    JST = timezone(timedelta(hours=9))
+
     zip_buffer = io.BytesIO()
     
     with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
@@ -48,8 +51,15 @@ def process_and_zip_images(
                 size = img_io.tell()
                 
                 if size <= max_bytes:
-                    # 制限を満たしたら採用
-                    zip_file.writestr(filename, img_io.getvalue())
+                    # 制限を満たしたら採用（JSTタイムスタンプで書き込み）
+                    now_jst = datetime.now(JST)
+                    zip_info = zipfile.ZipInfo(
+                        filename=filename,
+                        date_time=(now_jst.year, now_jst.month, now_jst.day,
+                                   now_jst.hour, now_jst.minute, now_jst.second)
+                    )
+                    zip_info.compress_type = zipfile.ZIP_DEFLATED
+                    zip_file.writestr(zip_info, img_io.getvalue())
                     break
                 
                 # 容量オーバーのため品質を下げる
@@ -59,7 +69,14 @@ def process_and_zip_images(
             if quality < min_quality:
                 img_io = io.BytesIO()
                 image.save(img_io, format="JPEG", quality=min_quality, optimize=True)
-                zip_file.writestr(filename, img_io.getvalue())
+                now_jst = datetime.now(JST)
+                zip_info = zipfile.ZipInfo(
+                    filename=filename,
+                    date_time=(now_jst.year, now_jst.month, now_jst.day,
+                               now_jst.hour, now_jst.minute, now_jst.second)
+                )
+                zip_info.compress_type = zipfile.ZIP_DEFLATED
+                zip_file.writestr(zip_info, img_io.getvalue())
                 
     zip_buffer.seek(0)
     return zip_buffer
