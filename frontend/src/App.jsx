@@ -5,7 +5,7 @@ import SettingsPanel from './components/SettingsPanel';
 import SEOLandingPage from './components/SEOLandingPage';
 import AdPlaceholder from './components/AdPlaceholder';
 import SeasonalHeader from './components/SeasonalHeader';
-import { Upload, Download, HelpCircle, Expand, Minimize, Trash2, ShoppingBag, Images, Crop, Settings } from 'lucide-react';
+import { Upload, Download, HelpCircle, Expand, Minimize, Trash2, ShoppingBag, Images, Crop, Settings, RotateCcw, RotateCw } from 'lucide-react';
 import { canvasPreview } from './utils/canvasPreview';
 import { PLATFORM_PRESETS } from './components/SettingsPanel';
 
@@ -110,7 +110,8 @@ function App() {
             img.mosaicPaths,
             1,
             0,
-            img.noCrop
+            img.noCrop,
+            img.rotation || 0
           );
 
           return new Promise((resolve) => {
@@ -217,7 +218,8 @@ function App() {
                 <img
                   src={img.preview}
                   alt="preview"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-transform duration-300"
+                  style={{ transform: `rotate(${img.rotation || 0}deg)` }}
                 />
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 flex justify-between items-end">
                   <p className="text-xs text-white truncate drop-shadow-md">{img.file.name}</p>
@@ -240,6 +242,36 @@ function App() {
                   title={img.noCrop ? "全体表示ON (余白あり)" : "トリミング表示 (全画面)"}
                 >
                   {img.noCrop ? <Minimize size={14} /> : <Expand size={14} />}
+                </button>
+
+                {/* Rotate Left Button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const newImages = [...images];
+                    const cur = newImages[index].rotation || 0;
+                    newImages[index] = { ...newImages[index], rotation: (cur - 90 + 360) % 360, crop: null, mosaicPaths: [] };
+                    setImages(newImages);
+                  }}
+                  className="absolute bottom-1 left-1 bg-black/40 text-white/90 hover:bg-black/60 rounded-md p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm z-10 backdrop-blur-sm"
+                  title="左に90°回転"
+                >
+                  <RotateCcw size={14} />
+                </button>
+
+                {/* Rotate Right Button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const newImages = [...images];
+                    const cur = newImages[index].rotation || 0;
+                    newImages[index] = { ...newImages[index], rotation: (cur + 90) % 360, crop: null, mosaicPaths: [] };
+                    setImages(newImages);
+                  }}
+                  className="absolute bottom-1 right-8 bg-black/40 text-white/90 hover:bg-black/60 rounded-md p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm z-10 backdrop-blur-sm"
+                  title="右に90°回転"
+                >
+                  <RotateCw size={14} />
                 </button>
 
                 {/* Delete Image Button */}

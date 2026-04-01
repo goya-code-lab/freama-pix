@@ -257,7 +257,9 @@ function ImageEditorCanvas({ image, settings, onChange }) {
                         onLoad={onImageLoad}
                         className="max-h-[70vh] w-auto object-contain select-none pointer-events-none transition-all duration-75"
                         style={{
-                            filter: `brightness(${settings.brightness}%) contrast(${settings.contrast}%) saturate(${settings.saturation}%)`
+                            filter: `brightness(${settings.brightness}%) contrast(${settings.contrast}%) saturate(${settings.saturation}%)`,
+                            transform: `rotate(${image.rotation || 0}deg)`,
+                            transformOrigin: 'center center',
                         }}
                     />
 

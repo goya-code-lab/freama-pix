@@ -7,6 +7,7 @@ export async function canvasPreview(
     scale = 1,
     rotate = 0,
     noCrop = false,
+    imageRotation = 0,
 ) {
     const ctx = canvas.getContext('2d');
 
@@ -38,15 +39,24 @@ export async function canvasPreview(
     let cropW = (normCrop.width / 100) * image.naturalWidth;
     let cropH = (normCrop.height / 100) * image.naturalHeight;
 
+    // --- Image Rotation (90/180/270deg) ---
+    // When rotating 90 or 270 degrees, canvas width/height are swapped.
+    const radians = (imageRotation * Math.PI) / 180;
+    const isOddRotation = imageRotation === 90 || imageRotation === 270;
+
+    // rawLogical = pre-rotation crop dimensions; logical = post-rotation canvas dimensions
+    const rawLogicalWidth = cropW;
+    const rawLogicalHeight = cropH;
+
+    const logicalWidth = isOddRotation ? rawLogicalHeight : rawLogicalWidth;
+    const logicalHeight = isOddRotation ? rawLogicalWidth : rawLogicalHeight;
+
     // モバイルでのメモリ溢れや真っ白・オリジナル画像送信のフォールバックを防ぐため
     const MAX_DIMENSION = 2048;
     let pixelRatio = 1;
-    if (cropW > MAX_DIMENSION || cropH > MAX_DIMENSION) {
-        pixelRatio = Math.min(MAX_DIMENSION / cropW, MAX_DIMENSION / cropH);
+    if (logicalWidth > MAX_DIMENSION || logicalHeight > MAX_DIMENSION) {
+        pixelRatio = Math.min(MAX_DIMENSION / logicalWidth, MAX_DIMENSION / logicalHeight);
     }
-
-    const logicalWidth = cropW;
-    const logicalHeight = cropH;
 
     canvas.width = Math.floor(logicalWidth * pixelRatio);
     canvas.height = Math.floor(logicalHeight * pixelRatio);
@@ -60,11 +70,13 @@ export async function canvasPreview(
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, logicalWidth, logicalHeight);
 
-    // Center and rotate if needed
-    ctx.translate(logicalWidth / 2, logicalHeight / 2);
-    ctx.scale(scale, scale);
-    ctx.rotate((rotate * Math.PI) / 180);
-    ctx.translate(-logicalWidth / 2, -logicalHeight / 2);
+    // Apply image rotation (around the center of the canvas output)
+    if (imageRotation !== 0) {
+        ctx.translate(logicalWidth / 2, logicalHeight / 2);
+        ctx.rotate(radians);
+        // After rotating, the drawing space is rawLogicalWidth x rawLogicalHeight centered
+        ctx.translate(-rawLogicalWidth / 2, -rawLogicalHeight / 2);
+    }
 
     // Track the actual drawn area of the source image for overlays (like watermark)
     let drawW = logicalWidth;
