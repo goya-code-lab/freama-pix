@@ -33,6 +33,10 @@ function ImageEditorCanvas({ image, settings, onChange }) {
     // onImageLoad will calculate the correct crop once the natural dimensions are known.
     const [localCrop, setLocalCrop] = useState(image.crop ?? null);
 
+    // 前回のimage.idとaspectを追跡するためのref
+    const prevImageIdRef = useRef(image.id);
+    const prevAspectRef = useRef(aspect);
+
     // Mosaic Brush States
     const [paths, setPaths] = useState(image.mosaicPaths || []);
     const [currentPath, setCurrentPath] = useState(null);
@@ -45,16 +49,34 @@ function ImageEditorCanvas({ image, settings, onChange }) {
     const pathsRef = useRef(paths);
     useEffect(() => { pathsRef.current = paths; }, [paths]);
 
-    // Reset crop and paths when image changes or aspect ratio changes (preset change)
+    // 画像変更 or アスペクト比変更時の処理
     useEffect(() => {
-        if (imgRef.current && imgRef.current.width > 0 && imgRef.current.height > 0) {
-            const { width, height } = imgRef.current;
+        const imageChanged = prevImageIdRef.current !== image.id;
+        const aspectChanged = prevAspectRef.current !== aspect;
+
+        prevImageIdRef.current = image.id;
+        prevAspectRef.current = aspect;
+
+        if (!imgRef.current || imgRef.current.width === 0 || imgRef.current.height === 0) return;
+
+        const { width, height } = imgRef.current;
+        const newPaths = image.mosaicPaths || [];
+        setPaths(newPaths);
+
+        if (imageChanged && !aspectChanged) {
+            // 画像が切り替わった場合: 保存済みのcropがあればそれを使い、なければ初期値を計算
+            if (image.crop) {
+                setLocalCrop(image.crop);
+                onChange({ ...image, mosaicPaths: newPaths, imgRef: imgRef.current });
+            } else {
+                const newCrop = centerAspectCrop(width, height, aspect);
+                setLocalCrop(newCrop);
+                onChange({ ...image, crop: newCrop, mosaicPaths: newPaths, imgRef: imgRef.current });
+            }
+        } else if (aspectChanged) {
+            // プラットフォーム（アスペクト比）が変わった場合: 常にリセット
             const newCrop = centerAspectCrop(width, height, aspect);
-            const newPaths = image.mosaicPaths || [];
             setLocalCrop(newCrop);
-            setPaths(newPaths);
-            // mosaicPaths を明示的に渡して消去されないようにする
-            // ※ setMaskDataUrl('') は不要: pathsの変化でmaskDataUrlを再構築するuseEffectが自動実行される
             onChange({ ...image, crop: newCrop, mosaicPaths: newPaths, imgRef: imgRef.current });
         }
     }, [image.id, aspect]);
