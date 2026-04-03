@@ -12,6 +12,44 @@ import { PLATFORM_PRESETS } from './components/SettingsPanel';
 // ★オプション3（アニメーション＋アイコン強調）の切り替えフラグ
 const USE_OPTION_3 = true;
 
+// ── ヘルパー: 画像を指定角度（±90度）回転させた新しいData URLを生成 ──
+function rotateImagePreview(previewUrl, degrees) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const rad = (degrees * Math.PI) / 180;
+      const isOdd = Math.abs(degrees % 180) === 90;
+      const w = isOdd ? img.naturalHeight : img.naturalWidth;
+      const h = isOdd ? img.naturalWidth : img.naturalHeight;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate(rad);
+      ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
+      resolve(canvas.toDataURL('image/jpeg', 0.95));
+    };
+    img.onerror = reject;
+    img.src = previewUrl;
+  });
+}
+
+// ── ヘルパー: モザイクパスの座標を回転変換 ──
+// 右回転(90°CW): (x,y) → (100-y, x)
+// 左回転(90°CCW): (x,y) → (y, 100-x)
+function rotateMosaicPaths(paths, direction) {
+  if (!paths || paths.length === 0) return [];
+  return paths.map(path => ({
+    ...path,
+    points: path.points.map(p =>
+      direction === 'right'
+        ? { x: 100 - p.y, y: p.x }
+        : { x: p.y, y: 100 - p.x }
+    ),
+  }));
+}
+
 function App() {
   const [images, setImages] = useState([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
@@ -51,12 +89,12 @@ function App() {
   const handleProcessImages = async () => {
     if (images.length === 0) return;
 
-    if (settings.mosaicMode !== 'none') {
-      alert('処置中のモザイク処理を確定させてください。');
-      return;
-    }
-
     setIsProcessing(true);
+
+    // モザイクモードが残っている場合は自動確定（モバイルでタブ切り替えしてダウンロードするケース対応）
+    if (settings.mosaicMode !== 'none') {
+      handleSettingsChange({ mosaicMode: 'none' });
+    }
 
     try {
       const formData = new FormData();
@@ -219,7 +257,6 @@ function App() {
                   src={img.preview}
                   alt="preview"
                   className="w-full h-full object-cover transition-transform duration-300"
-                  style={{ transform: `rotate(${img.rotation || 0}deg)` }}
                 />
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 flex justify-between items-end">
                   <p className="text-xs text-white truncate drop-shadow-md">{img.file.name}</p>
@@ -246,11 +283,13 @@ function App() {
 
                 {/* Rotate Left Button */}
                 <button
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.stopPropagation();
+                    const img = images[index];
+                    const newPreview = await rotateImagePreview(img.preview, -90);
+                    const rotatedPaths = rotateMosaicPaths(img.mosaicPaths || [], 'left');
                     const newImages = [...images];
-                    const cur = newImages[index].rotation || 0;
-                    newImages[index] = { ...newImages[index], rotation: (cur - 90 + 360) % 360, crop: null, mosaicPaths: [] };
+                    newImages[index] = { ...img, preview: newPreview, rotation: 0, crop: null, mosaicPaths: rotatedPaths };
                     setImages(newImages);
                   }}
                   className="absolute bottom-1 left-1 bg-black/40 text-white/90 hover:bg-black/60 rounded-md p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm z-10 backdrop-blur-sm"
@@ -261,11 +300,13 @@ function App() {
 
                 {/* Rotate Right Button */}
                 <button
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.stopPropagation();
+                    const img = images[index];
+                    const newPreview = await rotateImagePreview(img.preview, 90);
+                    const rotatedPaths = rotateMosaicPaths(img.mosaicPaths || [], 'right');
                     const newImages = [...images];
-                    const cur = newImages[index].rotation || 0;
-                    newImages[index] = { ...newImages[index], rotation: (cur + 90) % 360, crop: null, mosaicPaths: [] };
+                    newImages[index] = { ...img, preview: newPreview, rotation: 0, crop: null, mosaicPaths: rotatedPaths };
                     setImages(newImages);
                   }}
                   className="absolute bottom-1 right-8 bg-black/40 text-white/90 hover:bg-black/60 rounded-md p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm z-10 backdrop-blur-sm"
