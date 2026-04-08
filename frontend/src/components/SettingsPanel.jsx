@@ -195,7 +195,7 @@ function SettingsPanel({ settings, onChange, onProcess, isReady, isProcessing })
                             className={`flex-1 py-1.5 text-xs font-semibold rounded transition-colors ${
                                 settings.mosaicMode !== 'none' 
                                     ? 'bg-red-500 text-white shadow-sm hover:bg-red-600 ring-2 ring-red-200' 
-                                    : 'bg-blue-600 text-white shadow-sm'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
                         >
                             確定
