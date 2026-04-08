@@ -179,32 +179,45 @@ export async function canvasPreview(
 
         mosaicPaths.forEach(drawPath);
 
-        // 1. Draw blurred version of the crop onto a new temporary canvas
+        // 1. ピクセル化（スケールダウン→スケールアップ）でモザイク生成
+        //    ctx.filter (blur) は iOS Safari 18未満で未対応のため、全ブラウザ対応の方式を使用
         const blurCanvas = document.createElement('canvas');
         blurCanvas.width = canvas.width;
         blurCanvas.height = canvas.height;
         const bCtx = blurCanvas.getContext('2d');
 
+        // mosaicStrength を使ってピクセルサイズを決定（値が大きいほど粗くなる）
+        const pixelSize = Math.max(2, Math.round(settings.mosaicStrength * 1.5));
+
         if (noCrop) {
-            const blurScaleFactor = (drawW * pixelRatio) / 500;
-            const scaledBlur = settings.mosaicStrength * blurScaleFactor;
-            bCtx.filter = `blur(${scaledBlur}px) ${filterStr}`;
+            const dstW = Math.round(drawW * pixelRatio);
+            const dstH = Math.round(drawH * pixelRatio);
+            const tinyW = Math.max(1, Math.ceil(dstW / pixelSize));
+            const tinyH = Math.max(1, Math.ceil(dstH / pixelSize));
 
-            bCtx.drawImage(
-                image,
-                0, 0, image.naturalWidth, image.naturalHeight,
-                drawX * pixelRatio, drawY * pixelRatio, drawW * pixelRatio, drawH * pixelRatio
-            );
+            const tinyCanvas = document.createElement('canvas');
+            tinyCanvas.width = tinyW;
+            tinyCanvas.height = tinyH;
+            const tCtx = tinyCanvas.getContext('2d');
+            tCtx.imageSmoothingEnabled = true;
+            tCtx.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight, 0, 0, tinyW, tinyH);
+
+            bCtx.imageSmoothingEnabled = false;
+            bCtx.drawImage(tinyCanvas, 0, 0, tinyW, tinyH,
+                Math.round(drawX * pixelRatio), Math.round(drawY * pixelRatio), dstW, dstH);
         } else {
-            const blurScaleFactor = (image.naturalWidth * pixelRatio) / 500;
-            const scaledBlur = settings.mosaicStrength * blurScaleFactor;
-            bCtx.filter = `blur(${scaledBlur}px) ${filterStr}`;
+            const tinyW = Math.max(1, Math.ceil(canvas.width / pixelSize));
+            const tinyH = Math.max(1, Math.ceil(canvas.height / pixelSize));
 
-            bCtx.drawImage(
-                image,
-                cropX, cropY, cropW, cropH,
-                0, 0, canvas.width, canvas.height
-            );
+            const tinyCanvas = document.createElement('canvas');
+            tinyCanvas.width = tinyW;
+            tinyCanvas.height = tinyH;
+            const tCtx = tinyCanvas.getContext('2d');
+            tCtx.imageSmoothingEnabled = true;
+            tCtx.drawImage(image, cropX, cropY, cropW, cropH, 0, 0, tinyW, tinyH);
+
+            bCtx.imageSmoothingEnabled = false;
+            bCtx.drawImage(tinyCanvas, 0, 0, tinyW, tinyH, 0, 0, canvas.width, canvas.height);
         }
 
         // 2. Use destination-in to mask the blurCanvas with our stroked maskCanvas
