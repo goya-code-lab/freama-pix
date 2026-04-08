@@ -1,3 +1,54 @@
+// ─── Box blur helpers ─────────────────────────────────────────────────────
+// 3-pass H+V box blur approximates Gaussian blur.
+// Does NOT use ctx.filter, so it works on all browsers including iOS Safari < 18.
+function _bH(s, d, w, h, r) {
+    const iarr = 1 / (r + r + 1);
+    for (let y = 0; y < h; y++) {
+        const row = y * w;
+        let s0 = 0, s1 = 0, s2 = 0, s3 = 0;
+        for (let k = -r; k <= r; k++) {
+            const xi = (row + Math.min(Math.max(k, 0), w - 1)) * 4;
+            s0 += s[xi]; s1 += s[xi+1]; s2 += s[xi+2]; s3 += s[xi+3];
+        }
+        for (let x = 0; x < w; x++) {
+            const di = (row + x) * 4;
+            d[di] = s0*iarr|0; d[di+1] = s1*iarr|0; d[di+2] = s2*iarr|0; d[di+3] = s3*iarr|0;
+            const ri = (row + Math.min(x+r+1, w-1)) * 4;
+            const li = (row + Math.max(x-r,   0))   * 4;
+            s0 += s[ri]-s[li]; s1 += s[ri+1]-s[li+1]; s2 += s[ri+2]-s[li+2]; s3 += s[ri+3]-s[li+3];
+        }
+    }
+}
+function _bV(s, d, w, h, r) {
+    const iarr = 1 / (r + r + 1);
+    for (let x = 0; x < w; x++) {
+        let s0 = 0, s1 = 0, s2 = 0, s3 = 0;
+        for (let k = -r; k <= r; k++) {
+            const yi = (Math.min(Math.max(k, 0), h-1) * w + x) * 4;
+            s0 += s[yi]; s1 += s[yi+1]; s2 += s[yi+2]; s3 += s[yi+3];
+        }
+        for (let y = 0; y < h; y++) {
+            const di = (y * w + x) * 4;
+            d[di] = s0*iarr|0; d[di+1] = s1*iarr|0; d[di+2] = s2*iarr|0; d[di+3] = s3*iarr|0;
+            const ri = (Math.min(y+r+1, h-1) * w + x) * 4;
+            const li = (Math.max(y-r,   0)   * w + x) * 4;
+            s0 += s[ri]-s[li]; s1 += s[ri+1]-s[li+1]; s2 += s[ri+2]-s[li+2]; s3 += s[ri+3]-s[li+3];
+        }
+    }
+}
+function applyBoxBlur(ctx, w, h, radius) {
+    if (radius <= 0 || w <= 0 || h <= 0) return;
+    const r = Math.max(1, Math.round(radius));
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const src = imageData.data;
+    const buf = new Uint8ClampedArray(src.length);
+    _bH(src, buf, w, h, r); _bV(buf, src, w, h, r);
+    _bH(src, buf, w, h, r); _bV(buf, src, w, h, r);
+    _bH(src, buf, w, h, r); _bV(buf, src, w, h, r);
+    ctx.putImageData(imageData, 0, 0);
+}
+// ───────────────────────────────────────────────────────────────────────────
+
 export async function canvasPreview(
     image,
     canvas,
@@ -179,46 +230,27 @@ export async function canvasPreview(
 
         mosaicPaths.forEach(drawPath);
 
-        // 1. ピクセル化（スケールダウン→スケールアップ）でモザイク生成
-        //    ctx.filter (blur) は iOS Safari 18未満で未対応のため、全ブラウザ対応の方式を使用
+        // 1. ブラーキャンバスに画像を描画し、ボックスブラーでガウシアンブラーを近似
+        //    ctx.filter に依存しないため iOS Safari 18未満でも動作する
         const blurCanvas = document.createElement('canvas');
         blurCanvas.width = canvas.width;
         blurCanvas.height = canvas.height;
-        const bCtx = blurCanvas.getContext('2d');
-
-        // mosaicStrength を使ってピクセルサイズを決定（値が大きいほど粗くなる）
-        const pixelSize = Math.max(2, Math.round(settings.mosaicStrength * 1.5));
+        const bCtx = blurCanvas.getContext('2d', { willReadFrequently: true });
 
         if (noCrop) {
-            const dstW = Math.round(drawW * pixelRatio);
-            const dstH = Math.round(drawH * pixelRatio);
-            const tinyW = Math.max(1, Math.ceil(dstW / pixelSize));
-            const tinyH = Math.max(1, Math.ceil(dstH / pixelSize));
-
-            const tinyCanvas = document.createElement('canvas');
-            tinyCanvas.width = tinyW;
-            tinyCanvas.height = tinyH;
-            const tCtx = tinyCanvas.getContext('2d');
-            tCtx.imageSmoothingEnabled = true;
-            tCtx.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight, 0, 0, tinyW, tinyH);
-
-            bCtx.imageSmoothingEnabled = false;
-            bCtx.drawImage(tinyCanvas, 0, 0, tinyW, tinyH,
-                Math.round(drawX * pixelRatio), Math.round(drawY * pixelRatio), dstW, dstH);
+            bCtx.drawImage(
+                image,
+                0, 0, image.naturalWidth, image.naturalHeight,
+                Math.round(drawX * pixelRatio), Math.round(drawY * pixelRatio),
+                Math.round(drawW * pixelRatio), Math.round(drawH * pixelRatio)
+            );
         } else {
-            const tinyW = Math.max(1, Math.ceil(canvas.width / pixelSize));
-            const tinyH = Math.max(1, Math.ceil(canvas.height / pixelSize));
-
-            const tinyCanvas = document.createElement('canvas');
-            tinyCanvas.width = tinyW;
-            tinyCanvas.height = tinyH;
-            const tCtx = tinyCanvas.getContext('2d');
-            tCtx.imageSmoothingEnabled = true;
-            tCtx.drawImage(image, cropX, cropY, cropW, cropH, 0, 0, tinyW, tinyH);
-
-            bCtx.imageSmoothingEnabled = false;
-            bCtx.drawImage(tinyCanvas, 0, 0, tinyW, tinyH, 0, 0, canvas.width, canvas.height);
+            bCtx.drawImage(image, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
         }
+
+        // 3パス ボックスブラー（ガウシアン近似）を適用。GUIのCSS backdropFilterと同様のスムーズなブラー効果。
+        const blurRadius = Math.round(settings.mosaicStrength * (canvas.width / 500));
+        applyBoxBlur(bCtx, canvas.width, canvas.height, blurRadius);
 
         // 2. Use destination-in to mask the blurCanvas with our stroked maskCanvas
         bCtx.filter = 'none';
