@@ -189,10 +189,21 @@ function ImageEditorCanvas({ image, settings, onChange }) {
         });
     };
 
-    // pointerLeave: 指が描画エリア外にはみ出した場合は破棄（誤入力防止）
+    // pointerLeave: 指が描画エリア外にはみ出した場合もパスを保存する（スマホで指が枠外に出ると発火するため）
     const handlePointerLeave = (e) => {
         if (!currentPath) return;
+        if (currentPath.points.length < 2) {
+            setCurrentPath(null);
+            return;
+        }
+        const finishedPath = currentPath;
         setCurrentPath(null);
+        setPaths(prev => {
+            const newPaths = [...prev, finishedPath];
+            console.log('[Mosaic] pointerLeave - saving paths count=', newPaths.length);
+            onChange({ ...image, mosaicPaths: newPaths, imgRef: imgRef.current });
+            return newPaths;
+        });
     };
 
     const currentCrop = image.noCrop
@@ -287,7 +298,7 @@ function ImageEditorCanvas({ image, settings, onChange }) {
                             onPointerMove={isMosaicMode ? handlePointerMove : undefined}
                             onPointerUp={isMosaicMode ? handlePointerUp : undefined}
                             onPointerLeave={isMosaicMode ? handlePointerLeave : undefined}
-                            onPointerCancel={isMosaicMode ? handlePointerLeave : undefined}
+                            onPointerCancel={isMosaicMode ? handlePointerCancel : undefined}
                             style={{
                                 cursor: getCursorStyle(),
                                 backdropFilter: maskDataUrl ? `blur(${settings.mosaicStrength}px)` : 'none',
